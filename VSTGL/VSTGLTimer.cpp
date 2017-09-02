@@ -52,7 +52,7 @@ bool Timer::start()
 		return false;
 
 #ifdef WIN32
-	timerId = SetTimer(NULL, NULL, timerInterval ,timerProc);
+	timerId = SetTimer(NULL, 0, timerInterval, timerProc);
 	if(timerId)
 	{
 		retval = true;
