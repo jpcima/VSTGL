@@ -28,9 +28,6 @@
 #include <cstdio>
 
 #if defined(_WIN32)
-//This is the instance of the application, set in the main source file.
-extern void* hInstance;
-
 //Used to check/setup Vertical Sync.
 typedef void (APIENTRY *PFNWGLEXTSWAPCONTROLPROC) (int);
 typedef int (*PFNWGLEXTGETSWAPINTERVALPROC) (void);
@@ -76,12 +73,12 @@ antialiasing(0)
 	winClass.lpfnWndProc = GLWndProc;
 	winClass.cbClsExtra = 0;
 	winClass.cbWndExtra = 0;
-	winClass.hInstance = static_cast<HINSTANCE>(hInstance);
+	winClass.hInstance = getDllHandle();
 	winClass.hIcon = 0;
 	winClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	winClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	winClass.lpszMenuName = 0;
-	//sprintf(tempstr, "VSTGLWindow%08x", static_cast<HINSTANCE>(hInstance));
+	//sprintf(tempstr, "VSTGLWindow%08x", getDllHandle());
 	sprintf(tempstr, "VSTGLWindow%08x", reinterpret_cast<int>(this));
 	winClass.lpszClassName = tempstr;
 	winClass.hIconSm = NULL;
@@ -140,10 +137,10 @@ VSTGLEditor::~VSTGLEditor()
 #if defined(_WIN32)
 	char tempstr[32];
 
-	//sprintf(tempstr, "VSTGLWindow%08x", static_cast<HINSTANCE>(hInstance));
+	//sprintf(tempstr, "VSTGLWindow%08x", getDllHandle());
 	sprintf(tempstr, "VSTGLWindow%08x", reinterpret_cast<int>(this));
 	//unregisters the window class
-	UnregisterClass(tempstr, static_cast<HINSTANCE>(hInstance));
+	UnregisterClass(tempstr, getDllHandle());
 #elif defined(__APPLE__)
 	//Unregister our HIView object.
 	UnregisterToolboxObjectClass((ToolboxObjectClassRef)controlSpec.u.classRef);
@@ -417,7 +414,7 @@ void VSTGLEditor::createWindow()
 	char tempstr[32];
 	HWND parentHWnd = static_cast<HWND>(systemWindow);
 
-	//sprintf(tempstr, "VSTGLWindow%08x", static_cast<HINSTANCE>(hInstance));
+	//sprintf(tempstr, "VSTGLWindow%08x", getDllHandle());
 	sprintf(tempstr, "VSTGLWindow%08x", reinterpret_cast<int>(this));
 	tempHWnd = CreateWindowEx(0,					//extended window style
 							  tempstr,				//pointer to registered class name
@@ -430,7 +427,7 @@ void VSTGLEditor::createWindow()
 							  (_rect.bottom-_rect.top),//window height
 							  parentHWnd,			//handle to parent or owner window
 							  NULL,					//handle to menu, or child-window identifier
-							  (HINSTANCE)hInstance,	//handle to application instance
+							  getDllHandle(),	//handle to application instance
 							  NULL);				//pointer to window-creation data
 
 	//This is so we can send messages to this object from the message loop.
@@ -677,6 +674,19 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 			break;
 	}
 	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+HINSTANCE VSTGLEditor::getDllHandle()
+{
+	static HMODULE hDll = NULL;
+	if (!hDll)
+	{
+		DWORD dwFlags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|
+		                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
+		LPCTSTR lpAddress = (LPCTSTR)&getDllHandle;
+		GetModuleHandleEx(dwFlags, lpAddress, &hDll);
+	}
+	return hDll;
 }
 #endif
 

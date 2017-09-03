@@ -197,6 +197,8 @@ class VSTGLEditor : public AEffEditor
 								 UINT message,
 								 WPARAM wParam,
 								 LPARAM lParam);
+
+	static HINSTANCE getDllHandle();
 #endif
 #if defined(__APPLE__)
 	///	OSX: Message loop - we use this to intercept mouse messages, among other things.
