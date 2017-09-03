@@ -30,7 +30,7 @@
 struct PluginProgram;
 
 //Trick to ensure inline functions get inlined properly.
-#ifdef WIN32
+#if defined(_WIN32)
 #define strictinline __forceinline
 #elif defined (__GNUC__)
 #define strictinline inline __attribute__((always_inline))

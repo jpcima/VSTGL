@@ -23,7 +23,7 @@
 
 #include "VSTGLTimer.h"
 
-#ifdef WIN32
+#if defined(_WIN32)
 using namespace std;
 #endif
 
@@ -51,7 +51,7 @@ bool Timer::start()
 	if(running)
 		return false;
 
-#ifdef WIN32
+#if defined(_WIN32)
 	timerId = SetTimer(NULL, 0, timerInterval, timerProc);
 	if(timerId)
 	{
@@ -60,7 +60,7 @@ bool Timer::start()
 		//Register with TimerSingleton.
 		TimerSingleton::getInstance().registerTimer(this, timerId);
 	}
-#elif MACX
+#elif defined(__APPLE__)
 	OSStatus err;
 
 	err = InstallEventLoopTimer(GetCurrentEventLoop(),
@@ -84,17 +84,17 @@ void Timer::stop()
 {
 	if(running)
 	{
-#ifdef WIN32
+#if defined(_WIN32)
 		KillTimer(NULL, timerId);
 		TimerSingleton::getInstance().unRegisterTimer(timerId);
-#elif MACX
+#elif defined(__APPLE__)
 		RemoveEventLoopTimer(timer);
 #endif
 		running = false;
 	}
 }
 
-#ifdef WIN32
+#if defined(_WIN32)
 //-----------------------------------------------------------------------------
 void  __stdcall Timer::timerProc(HWND hWnd,
 								 unsigned int uMsg,
@@ -152,7 +152,7 @@ TimerSingleton::TimerSingleton()
 	
 }
 
-#elif MACX
+#elif defined(__APPLE__)
 //-----------------------------------------------------------------------------
 pascal void Timer::timerProc(EventLoopTimerRef theTimer, void *userData)
 {

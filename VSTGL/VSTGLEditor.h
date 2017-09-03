@@ -27,11 +27,11 @@
 
 #include "aeffeditor.h"
 
-#ifdef WIN32
+#if defined(_WIN32)
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glu.h>
-#elif MACX
+#elif defined(__APPLE__)
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glu.h>
 	#include <AGL/agl.h>
@@ -191,14 +191,14 @@ class VSTGLEditor : public AEffEditor
 	int getWidth() const {return _rect.right-_rect.left;};
 	///	Returns the height of the window/context.
 	int getHeight() const {return _rect.bottom-_rect.top;};
-#ifdef WIN32
+#if defined(_WIN32)
 	///	Windows: Message loop - we use this to intercept mouse messages, among other things.
 	static LONG WINAPI GLWndProc(HWND hwnd,
 								 UINT message,
 								 WPARAM wParam,
 								 LPARAM lParam);
 #endif
-#ifdef MACX
+#if defined(__APPLE__)
 	///	OSX: Message loop - we use this to intercept mouse messages, among other things.
 	static pascal OSStatus macEventHandler(EventHandlerCallRef handler,
 										   EventRef event,
@@ -248,7 +248,7 @@ class VSTGLEditor : public AEffEditor
 	 */
 	void setupAntialiasing();
 
-#ifdef WIN32
+#if defined(_WIN32)
 	///	Windows: Windows rendering context.
 	HGLRC glRenderingContext;
 	///	Windows: Holds a handle to the window we created in createWindow().
@@ -258,7 +258,7 @@ class VSTGLEditor : public AEffEditor
 	///	Windows: The pixel format we want to use for the window.
 	PIXELFORMATDESCRIPTOR pixelformat;
 #endif
-#ifdef MACX
+#if defined(__APPLE__)
 	///	OSX: OS X rendering context.
 	AGLContext context;
 	///	OSX: The pixel format we used.
@@ -295,7 +295,7 @@ class VSTGLEditor : public AEffEditor
 	int antialiasing;
 };
 
-#ifdef WIN32
+#if defined(_WIN32)
 //Why aren't these in a system header?
 #define WGL_NUMBER_PIXEL_FORMATS_ARB   0x2000
 #define WGL_DRAW_TO_WINDOW_ARB         0x2001

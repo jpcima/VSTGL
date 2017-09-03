@@ -24,10 +24,10 @@
 #ifndef VSTGLTIMER_H_
 #define VSTGLTIMER_H_
 
-#ifdef WIN32
+#if defined(_WIN32)
 #include <windows.h>
 #include <map>
-#elif MACX
+#elif defined(__APPLE__)
 #include <Carbon/Carbon.h>
 #endif
 
@@ -74,22 +74,22 @@ class Timer
 	 */
 	virtual void timerCallback() = 0;
 
-#ifdef WIN32
+#if defined(_WIN32)
 	///	Windows: Windows callback function, calls timerCallback().
 	static void  __stdcall timerProc(HWND hWnd,
 									 unsigned int uMsg,
 									 unsigned int idEvent,
 									 unsigned long dwTime);
-#elif MACX
+#elif defined(__APPLE__)
 	///	OSX: OSX callback function, calls timerCallback().
 	static pascal void timerProc(EventLoopTimerRef theTimer,
 									void *userData);
 #endif
   private:
-#ifdef WIN32
+#if defined(_WIN32)
 	///	Windows: Timer ID, used to kill the timer in the stop() method.
 	int timerId;
-#elif MACX
+#elif defined(__APPLE__)
 	///	OSX: Pointer to the timer.
 	EventLoopTimerRef timer;
 #endif
@@ -101,7 +101,7 @@ class Timer
 };
 
 //-----------------------------------------------------------------------------
-#ifdef WIN32
+#if defined(_WIN32)
 ///	Windows-only:  Used to work out which Timer::timerCallback to call for a given timerId.
 class TimerSingleton
 {

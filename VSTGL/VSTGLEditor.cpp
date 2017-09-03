@@ -27,7 +27,7 @@
 
 #include <cstdio>
 
-#ifdef WIN32
+#if defined(_WIN32)
 //This is the instance of the application, set in the main source file.
 extern void* hInstance;
 
@@ -63,7 +63,7 @@ antialiasing(0)
 	else if((flags&Antialias2x) == Antialias2x)
 		antialiasing = 6;
 
-#ifdef WIN32
+#if defined(_WIN32)
 	dc = 0;
 	glRenderingContext = 0;
 
@@ -89,7 +89,7 @@ antialiasing(0)
 	//Register the window class (this is unregistered in the VSTGLEditor
 	//destructor).
 	RegisterClassEx(&winClass);
-#elif MACX
+#elif defined(__APPLE__)
 	context = NULL;
 	pixels = NULL;
 	boundsX = 0;
@@ -137,14 +137,14 @@ antialiasing(0)
 //-----------------------------------------------------------------------------
 VSTGLEditor::~VSTGLEditor()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	char tempstr[32];
 
 	//sprintf(tempstr, "VSTGLWindow%08x", static_cast<HINSTANCE>(hInstance));
 	sprintf(tempstr, "VSTGLWindow%08x", reinterpret_cast<int>(this));
 	//unregisters the window class
 	UnregisterClass(tempstr, static_cast<HINSTANCE>(hInstance));
-#elif MACX
+#elif defined(__APPLE__)
 	//Unregister our HIView object.
 	UnregisterToolboxObjectClass((ToolboxObjectClassRef)controlSpec.u.classRef);
 #endif
@@ -156,7 +156,7 @@ bool VSTGLEditor::open(void *ptr)
 	AEffEditor::open(ptr);
 	createWindow();
 
-#ifdef WIN32
+#if defined(_WIN32)
 	int tempint;
 	dc = GetDC(tempHWnd);
 
@@ -194,7 +194,7 @@ bool VSTGLEditor::open(void *ptr)
 
 	glRenderingContext = wglCreateContext(dc);
 	wglMakeCurrent(dc, glRenderingContext);
-#elif MACX
+#elif defined(__APPLE__)
 	WindowAttributes attr;
 	HIRect bounds;
 	window = static_cast<WindowRef>(ptr);
@@ -353,12 +353,12 @@ void VSTGLEditor::close()
 	guiClose();
 	swapBuffers();
 
-#ifdef WIN32
+#if defined(_WIN32)
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glRenderingContext);
 	ReleaseDC(tempHWnd, dc);
 	DestroyWindow(tempHWnd);
-#elif MACX
+#elif defined(__APPLE__)
 	aglSetCurrentContext(NULL);
 	aglSetDrawable(context, NULL);
 	if(context)
@@ -387,7 +387,7 @@ void VSTGLEditor::refreshGraphics()
 	swapBuffers();
 }
 
-#ifdef MACX
+#if defined(__APPLE__)
 //-----------------------------------------------------------------------------
 void VSTGLEditor::updateBounds(int x, int y)
 {
@@ -413,7 +413,7 @@ void VSTGLEditor::updateBounds(int x, int y)
 //window will have already been constructed for us on OS X.
 void VSTGLEditor::createWindow()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	char tempstr[32];
 	HWND parentHWnd = static_cast<HWND>(systemWindow);
 
@@ -441,7 +441,7 @@ void VSTGLEditor::createWindow()
 //-----------------------------------------------------------------------------
 void VSTGLEditor::setupVSync()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	unsigned char *extensions;
 	PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
 
@@ -458,7 +458,7 @@ void VSTGLEditor::setupVSync()
 		if(wglSwapIntervalEXT)
 			wglSwapIntervalEXT(1);
 	}
-#elif MACX
+#elif defined(__APPLE__)
 	GLint swap = 1;
 
 	//Some things are so much easier on OSX...
@@ -469,7 +469,7 @@ void VSTGLEditor::setupVSync()
 //-----------------------------------------------------------------------------
 void VSTGLEditor::setupAntialiasing()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	unsigned char *extensions;
 	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 	int pixelFormat;
@@ -532,9 +532,9 @@ void VSTGLEditor::setupAntialiasing()
 //-----------------------------------------------------------------------------
 void VSTGLEditor::setupContext()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	wglMakeCurrent(dc, glRenderingContext);
-#elif MACX
+#elif defined(__APPLE__)
 	GLint tempBounds[4];
 
     tempBounds[0] = boundsX;
@@ -554,9 +554,9 @@ void VSTGLEditor::setupContext()
 //-----------------------------------------------------------------------------
 void VSTGLEditor::swapBuffers()
 {
-#ifdef WIN32
+#if defined(_WIN32)
 	SwapBuffers(dc);
-#elif MACX
+#elif defined(__APPLE__)
 	aglSwapBuffers(context);
 #endif
 }
@@ -571,7 +571,7 @@ void VSTGLEditor::setRect(int x, int y, int width, int height)
 }
 
 //-----------------------------------------------------------------------------
-#ifdef WIN32
+#if defined(_WIN32)
 
 //Don't know why MSVC doesn't seem to recognise WM_MOUSEWHEEL for me...
 //(this probably won't work)
@@ -681,7 +681,7 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 #endif
 
 //-----------------------------------------------------------------------------
-#ifdef MACX
+#if defined(__APPLE__)
 pascal OSStatus VSTGLEditor::macEventHandler(EventHandlerCallRef handler,
 											 EventRef event,
 											 void *userData)
