@@ -191,6 +191,15 @@ bool VSTGLEditor::open(void *ptr)
 
 	glRenderingContext = wglCreateContext(dc);
 	wglMakeCurrent(dc, glRenderingContext);
+
+	if (wndHookRefCount++ == 0)
+		wndHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)&GLWndHook,
+		                           getDllHandle(), GetCurrentThreadId());
+
+	WindowInfo wi;
+	wi.wndChild = tempHWnd;
+	wi.wndParent = static_cast<HWND>(systemWindow);
+	wi.instance = this;
 #elif defined(__APPLE__)
 	WindowAttributes attr;
 	HIRect bounds;
@@ -338,6 +347,10 @@ bool VSTGLEditor::open(void *ptr)
 	if(useVSync)
 		setupVSync();
 
+#if defined(_WIN32)
+	wndInfos.push_back(wi);
+#endif
+
 	guiOpen();
 
 	return true;
@@ -351,6 +364,13 @@ void VSTGLEditor::close()
 	swapBuffers();
 
 #if defined(_WIN32)
+	for (std::vector<WindowInfo>::iterator it = wndInfos.begin();; ++it)
+		if (it->wndChild == tempHWnd) {
+			wndInfos.erase(it);
+			break;
+		}
+	if (--wndHookRefCount == 0)
+		UnhookWindowsHookEx(wndHook);
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glRenderingContext);
 	ReleaseDC(tempHWnd, dc);
@@ -432,6 +452,8 @@ void VSTGLEditor::createWindow()
 
 	//This is so we can send messages to this object from the message loop.
 	SetWindowLong(tempHWnd, GWL_USERDATA, (long)this);
+	//This allows the child window to receive keyboard input.
+	SetFocus(tempHWnd);
 #endif
 }
 
@@ -676,6 +698,35 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+LRESULT CALLBACK VSTGLEditor::GLWndHook(
+	int nCode, WPARAM wHkParam, LPARAM lHkParam)
+{
+	if (nCode != HC_ACTION)
+		return CallNextHookEx(wndHook, nCode, wHkParam, lHkParam);
+
+	const CWPSTRUCT *cwp = (CWPSTRUCT *)lHkParam;
+	const WindowInfo *wi = NULL;
+
+	for (std::vector<WindowInfo>::const_iterator it = wndInfos.begin();
+	     !wi && it != wndInfos.end(); ++it)
+		if (it->wndParent == cwp->hwnd)
+			wi = &*it;
+
+	if (!wi)
+		return CallNextHookEx(wndHook, nCode, wHkParam, lHkParam);
+
+	// Pass the focus to the child window when activated.
+	switch (cwp->message) {
+		case WM_ACTIVATE:
+		case WM_MOUSEACTIVATE:
+			SetFocus(wi->wndChild); break;
+		default:
+			break;
+	}
+
+	return CallNextHookEx(wndHook, nCode, wHkParam, lHkParam);
+}
+
 HINSTANCE VSTGLEditor::getDllHandle()
 {
 	static HMODULE hDll = NULL;
@@ -688,6 +739,10 @@ HINSTANCE VSTGLEditor::getDllHandle()
 	}
 	return hDll;
 }
+
+HHOOK VSTGLEditor::wndHook = NULL;
+unsigned VSTGLEditor::wndHookRefCount = 0;
+std::vector<VSTGLEditor::WindowInfo> VSTGLEditor::wndInfos;
 #endif
 
 //-----------------------------------------------------------------------------

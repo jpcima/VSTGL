@@ -26,6 +26,7 @@
 #define VSTGLEDITOR_H_
 
 #include "aeffeditor.h"
+#include <vector>
 
 #if defined(_WIN32)
 	#include <windows.h>
@@ -197,6 +198,10 @@ class VSTGLEditor : public AEffEditor
 								 UINT message,
 								 WPARAM wParam,
 								 LPARAM lParam);
+	///	Windows: Window message hook - we use this to monitor the parent window.
+	static LRESULT CALLBACK GLWndHook(int nCode,
+	                                  WPARAM wHkParam,
+	                                  LPARAM lHkParam);
 
 	static HINSTANCE getDllHandle();
 #endif
@@ -259,6 +264,19 @@ class VSTGLEditor : public AEffEditor
 	HDC dc;
 	///	Windows: The pixel format we want to use for the window.
 	PIXELFORMATDESCRIPTOR pixelformat;
+	///	Windows: The window message hook used to monitor the parent window.
+	static HHOOK wndHook;
+	///	Windows: The number of instances using the message hook.
+	static unsigned wndHookRefCount;
+	///	Windows: Information kept about editor windows and associated instances
+	struct WindowInfo
+	{
+		HWND wndChild;
+		HWND wndParent;
+		VSTGLEditor *instance;
+	};
+	///	Windows: Information about the windows of all the current instances
+	static std::vector<WindowInfo> wndInfos;
 #endif
 #if defined(__APPLE__)
 	///	OSX: OS X rendering context.
