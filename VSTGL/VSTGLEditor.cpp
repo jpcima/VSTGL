@@ -25,6 +25,7 @@
 #include "VSTGLEditor.h"
 #include "audioeffect.h"
 
+#include <boost/locale/utf.hpp>
 #include <cstdio>
 
 #if defined(_WIN32)
@@ -598,12 +599,37 @@ void VSTGLEditor::setRect(int x, int y, int width, int height)
 #define WM_MOUSEWHEEL 0x020A
 #endif
 
+static bool TranslateKeyToVst(
+		VstKeyCode &key, WPARAM wParam, LPARAM lParam, BYTE kbstate[256])
+{
+	namespace utf = boost::locale::utf;
+
+	if (kbstate[VK_SHIFT] & 0x80) key.modifier |= MODIFIER_SHIFT;
+	if (kbstate[VK_CONTROL] & 0x80) key.modifier |= MODIFIER_CONTROL;
+	if (kbstate[VK_MENU] & 0x80) key.modifier |= MODIFIER_ALTERNATE;
+	if (kbstate[VK_LWIN] & 0x80) key.modifier |= MODIFIER_COMMAND;
+	if (kbstate[VK_RWIN] & 0x80) key.modifier |= MODIFIER_COMMAND;
+
+	UINT scancode = (lParam >> 16) & 0xff;
+	WCHAR u16;
+	if (ToUnicode(wParam, scancode, kbstate, &u16, 1, 0) <= 0)
+		return false;
+
+	WCHAR *it = &u16;
+	utf::code_point u32 = utf::utf_traits<WCHAR>::decode(it, it + 1);
+	if (!utf::is_valid_codepoint(u32))
+		return false;
+
+	key.character = u32;
+	key.virt = 0;  // TODO special keys
+	return true;
+}
+
 LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 								   UINT message,
 								   WPARAM wParam,
 								   LPARAM lParam)
 {
-	VstKeyCode tempkey;
 	VSTGLEditor *ed = reinterpret_cast<VSTGLEditor *>(GetWindowLong(hwnd, GWL_USERDATA));
 
 	switch(message)
@@ -676,18 +702,21 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 								 (int)(short)HIWORD(lParam));
 			break;
 		case WM_KEYDOWN:
-			if(ed)
-			{
-				//This could be improved?
-				tempkey.character = wParam;
-				ed->onGLKeyDown(tempkey);
-			}
-			break;
 		case WM_KEYUP:
 			if(ed)
 			{
-				tempkey.character = wParam;
-				ed->onGLKeyUp(tempkey);
+				BYTE kbstate[256] = {};
+				if (!GetKeyboardState(kbstate))
+					break;
+
+				VstKeyCode key;
+				if (!TranslateKeyToVst(key, wParam, lParam, kbstate))
+					break;
+
+				if (message == WM_KEYDOWN)
+					ed->onGLKeyDown(key);
+				else
+					ed->onGLKeyUp(key);
 			}
 			break;
 		case WM_PAINT:
