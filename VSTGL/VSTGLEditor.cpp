@@ -354,6 +354,11 @@ bool VSTGLEditor::open(void *ptr)
 
 	guiOpen();
 
+#if defined(_WIN32)
+	if (GetFocus() == tempHWnd)
+		onGainedFocus();
+#endif
+
 	return true;
 }
 
