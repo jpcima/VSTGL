@@ -71,7 +71,7 @@ antialiasing(0)
 	//most of this stuff is copied from VSTGUI
 	winClass.cbSize = sizeof(WNDCLASSEX);
 	winClass.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
-	winClass.lpfnWndProc = GLWndProc;
+	winClass.lpfnWndProc = &DefWindowProc;
 	winClass.cbClsExtra = 0;
 	winClass.cbWndExtra = 0;
 	winClass.hInstance = getDllHandle();
@@ -451,10 +451,12 @@ void VSTGLEditor::createWindow()
 							  getDllHandle(),	//handle to application instance
 							  NULL);				//pointer to window-creation data
 
-	//This is so we can send messages to this object from the message loop.
-	SetWindowLong(tempHWnd, GWL_USERDATA, (long)this);
 	//This allows the child window to receive keyboard input.
 	SetFocus(tempHWnd);
+	//This is so we can send messages to this object from the message loop.
+	SetWindowLongPtr(tempHWnd, GWLP_USERDATA, (LONG_PTR)this);
+	//This defines the message handling procedure of the window.
+	SetWindowLongPtr(tempHWnd, GWLP_WNDPROC, (LONG_PTR)&GLWndProc);
 #endif
 }
 
