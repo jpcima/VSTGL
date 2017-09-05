@@ -780,7 +780,7 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 			break;
 		case WM_MOUSEWHEEL:
 			if(ed)
-				ed->onMouseWheel(HIWORD(wParam),
+				ed->onMouseWheel((int)(short)HIWORD(wParam),
 								 (int)(short)LOWORD(lParam),
 								 (int)(short)HIWORD(lParam));
 			break;
