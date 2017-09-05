@@ -696,6 +696,20 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 
 	switch(message)
 	{
+		case WM_SETFOCUS:
+			if(ed)
+			{
+				ed->onGainedFocus();
+			}
+			break;
+
+		case WM_KILLFOCUS:
+			if(ed)
+			{
+				ed->onLostFocus();
+			}
+			break;
+
 		case WM_LBUTTONDOWN:
 			if(ed)
 			{

@@ -163,6 +163,11 @@ class VSTGLEditor : public AEffEditor
 	 */
 	virtual void onGLKeyUp(const VstKeyCode& key) {};
 
+	///	Called when the editor window gains focus.
+	virtual void onGainedFocus() {};
+	///	Called when the editor window loses focus.
+	virtual void onLostFocus() {};
+
 	///	This is the method where everything gets drawn.
 	/*!
 		It's into here that you'll want to put your drawing code in
