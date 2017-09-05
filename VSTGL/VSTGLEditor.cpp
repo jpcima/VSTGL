@@ -599,30 +599,92 @@ void VSTGLEditor::setRect(int x, int y, int width, int height)
 #define WM_MOUSEWHEEL 0x020A
 #endif
 
-static bool TranslateKeyToVst(
-		VstKeyCode &key, WPARAM wParam, LPARAM lParam, BYTE kbstate[256])
+VstKeyCode TranslateKeyToVst(WPARAM wParam, LPARAM lParam, BYTE kbstate[256])
 {
 	namespace utf = boost::locale::utf;
 
-	if (kbstate[VK_SHIFT] & 0x80) key.modifier |= MODIFIER_SHIFT;
-	if (kbstate[VK_CONTROL] & 0x80) key.modifier |= MODIFIER_CONTROL;
-	if (kbstate[VK_MENU] & 0x80) key.modifier |= MODIFIER_ALTERNATE;
-	if (kbstate[VK_LWIN] & 0x80) key.modifier |= MODIFIER_COMMAND;
-	if (kbstate[VK_RWIN] & 0x80) key.modifier |= MODIFIER_COMMAND;
+	VstKeyCode key;
+	key.character = 0;
+	key.virt = 0;
+	key.modifier = 0;
 
-	UINT scancode = (lParam >> 16) & 0xff;
-	WCHAR u16;
-	if (ToUnicode(wParam, scancode, kbstate, &u16, 1, 0) <= 0)
-		return false;
+	if (kbstate[VK_SHIFT] & 0x80)
+		key.modifier |= MODIFIER_SHIFT;
+	if (kbstate[VK_CONTROL] & 0x80)
+		key.modifier |= MODIFIER_CONTROL;
+	if (kbstate[VK_MENU] & 0x80)
+		key.modifier |= MODIFIER_ALTERNATE;
+	if ((kbstate[VK_LWIN] & 0x80) || (kbstate[VK_RWIN] & 0x80))
+		key.modifier |= MODIFIER_COMMAND;
 
-	WCHAR *it = &u16;
-	utf::code_point u32 = utf::utf_traits<WCHAR>::decode(it, it + 1);
-	if (!utf::is_valid_codepoint(u32))
-		return false;
+	if (wParam == VK_DELETE) {
+		key.character = 127;
+	} else {
+		UINT scancode = (lParam >> 16) & 0xff;
+		WCHAR u16;
+		if (ToUnicode(wParam, scancode, kbstate, &u16, 1, 0) > 0) {
+			WCHAR *it = &u16;
+			utf::code_point u32 = utf::utf_traits<WCHAR>::decode(it, it + 1);
+			if (utf::is_valid_codepoint(u32))
+				key.character = u32;
+		}
+	}
 
-	key.character = u32;
-	key.virt = 0;  // TODO special keys
-	return true;
+	static BYTE vkmap[256] = {};
+	static bool vkmap_init = false;
+
+	if (!vkmap_init)
+	{
+		vkmap[VK_BACK] = VKEY_BACK;
+		vkmap[VK_TAB] = VKEY_TAB;
+		vkmap[VK_CLEAR] = VKEY_CLEAR;
+		vkmap[VK_RETURN] = VKEY_RETURN;
+		vkmap[VK_PAUSE] = VKEY_PAUSE;
+		vkmap[VK_ESCAPE] = VKEY_ESCAPE;
+		vkmap[VK_SPACE] = VKEY_SPACE;
+		// vkmap[VK_] = VKEY_NEXT;
+		vkmap[VK_END] = VKEY_END;
+		vkmap[VK_HOME] = VKEY_HOME;
+		vkmap[VK_LEFT] = VKEY_LEFT;
+		vkmap[VK_UP] = VKEY_UP;
+		vkmap[VK_RIGHT] = VKEY_RIGHT;
+		vkmap[VK_DOWN] = VKEY_DOWN;
+		vkmap[VK_PRIOR] = VKEY_PAGEUP;
+		vkmap[VK_NEXT] = VKEY_PAGEDOWN;
+		vkmap[VK_SELECT] = VKEY_SELECT;
+		vkmap[VK_PRINT] = VKEY_PRINT;
+		// vkmap[VK_] = VKEY_ENTER;
+		vkmap[VK_SNAPSHOT] = VKEY_SNAPSHOT;
+		vkmap[VK_INSERT] = VKEY_INSERT;
+		vkmap[VK_DELETE] = VKEY_DELETE;
+		vkmap[VK_HELP] = VKEY_HELP;
+		for (int i = 0; i <= 9; ++i)
+			vkmap[VK_NUMPAD0 + i] = (VstVirtualKey)(VKEY_NUMPAD0 + i);
+		vkmap[VK_MULTIPLY] = VKEY_MULTIPLY;
+		vkmap[VK_ADD] = VKEY_ADD;
+		vkmap[VK_SEPARATOR] = VKEY_SEPARATOR;
+		vkmap[VK_SUBTRACT] = VKEY_SUBTRACT;
+		vkmap[VK_DECIMAL] = VKEY_DECIMAL;
+		vkmap[VK_DIVIDE] = VKEY_DIVIDE;
+		for (int i = 0; i < 12; ++i)
+			vkmap[VK_F1 + i] = (VstVirtualKey)(VKEY_F1 + i);
+		vkmap[VK_NUMLOCK] = VKEY_NUMLOCK;
+		vkmap[VK_SCROLL] = VKEY_SCROLL;
+		vkmap[VK_SHIFT] = VKEY_SHIFT;
+		vkmap[VK_LSHIFT] = VKEY_SHIFT;
+		vkmap[VK_RSHIFT] = VKEY_SHIFT;
+		vkmap[VK_CONTROL] = VKEY_CONTROL;
+		vkmap[VK_LCONTROL] = VKEY_CONTROL;
+		vkmap[VK_RCONTROL] = VKEY_CONTROL;
+		vkmap[VK_MENU] = VKEY_ALT;
+		// vkmap[VK_] = VKEY_EQUALS;
+		vkmap_init = true;
+	}
+
+	if (wParam < 256)
+		key.virt = vkmap[wParam];
+
+	return key;
 }
 
 LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
@@ -709,10 +771,7 @@ LONG WINAPI VSTGLEditor::GLWndProc(HWND hwnd,
 				if (!GetKeyboardState(kbstate))
 					break;
 
-				VstKeyCode key;
-				if (!TranslateKeyToVst(key, wParam, lParam, kbstate))
-					break;
-
+				VstKeyCode key = TranslateKeyToVst(wParam, lParam, kbstate);
 				if (message == WM_KEYDOWN)
 					ed->onGLKeyDown(key);
 				else
